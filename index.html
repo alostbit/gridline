@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bauhaus Ripple System</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #e6d7c3;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        canvas {
+            display: block;
+            background: #e6d7c3;
+        }
+        
+        .ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #2a2a2a;
+            z-index: 10;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .fullscreen-btn {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 15;
+            background: rgba(255, 255, 255, 0.1);
+            color: #2a2a2a;
+            border: 2px solid rgba(42, 42, 42, 0.3);
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .fullscreen-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(42, 42, 42, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .fullscreen-btn.active {
+            background: rgba(230, 126, 34, 0.2);
+            border-color: rgba(230, 126, 34, 0.6);
+            color: #e67e22;
+        }
+        
+        .controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: #2a2a2a;
+            z-index: 10;
+            font-size: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+            max-height: 85vh;
+            overflow: hidden;
+        }
+        
+        .controls-header {
+            padding: 12px 15px 8px 15px;
+            border-bottom: 1px solid rgba(42, 42, 42, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .controls-title {
+            font-weight: bold;
+            font-size: 13px;
+        }
+        
+        .hide-controls-btn {
+            background: rgba(42, 42, 42, 0.3);
+            color: #2a2a2a;
+            border: 1px solid rgba(42, 42, 42, 0.4);
+            padding: 6px 8px;
+            font-size: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .hide-controls-btn:hover {
+            background: rgba(42, 42, 42, 0.5);
+            border-color: rgba(42, 42, 42, 0.6);
+        }
+        
+        .show-controls-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.1);
+            color: #2a2a2a;
+            border: 2px solid rgba(42, 42, 42, 0.3);
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+            width: 44px;
+            height: 44px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .show-controls-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(42, 42, 42, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .controls-content {
+            padding: 15px;
+            max-height: calc(85vh - 50px);
+            overflow-y: auto;
+        }
+        
+        .slider-group {
+            margin-bottom: 10px;
+        }
+        
+        .slider-group label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: bold;
+        }
+        
+        input[type="range"] {
+            width: 120px;
+            height: 4px;
+            background: #8a8a8a;
+            outline: none;
+            border-radius: 2px;
+            appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #2a2a2a;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #2a2a2a;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="ui">
+        <div>Elements: <span id="elementCount">0</span></div>
+    </div>
+    <button class="fullscreen-btn" id="toggleFullscreen">⤢</button>
+    <button class="show-controls-btn" id="showControls">⚙</button>
+    <div class="controls" id="controlsPanel">
+        <div class="controls-header">
+            <div class="controls-title">Controls</div>
+            <button class="hide-controls-btn" id="toggleControls">▼</button>
+        </div>
+        <div class="controls-content">
+            <div class="slider-group">
+                <label for="circleSpeed">Circle Speed</label>
+                <input type="range" id="circleSpeed" min="0" max="2" step="0.1" value="0.5">
+            </div>
+            <div class="slider-group">
+                <label for="circleSize">Circle Size</label>
+                <input type="range" id="circleSize" min="0.5" max="3" step="0.1" value="1">
+            </div>
+            <div class="slider-group">
+                <label for="rippleSpeed">Ripple Speed</label>
+                <input type="range" id="rippleSpeed" min="0.1" max="4" step="0.1" value="1.5">
+            </div>
+            <div class="slider-group">
+                <label for="lineOpacity">Grid Opacity</label>
+                <input type="range" id="lineOpacity" min="0.1" max="1" step="0.05" value="0.3">
+            </div>
+            <div class="slider-group">
+                <label for="maxCircles">Max Circles</label>
+                <input type="range" id="maxCircles" min="3" max="30" step="1" value="15">
+            </div>
+            <div class="slider-group">
+                <label for="rippleFreq">Ripple Rate</label>
+                <input type="range" id="rippleFreq" min="0.005" max="0.08" step="0.005" value="0.03">
+            </div>
+            <div class="slider-group">
+                <label for="lineThickness">Line Thickness</label>
+                <input type="range" id="lineThickness" min="0.3" max="2.5" step="0.1" value="1">
+            </div>
+            <div class="slider-group">
+                <label for="orangeIntensity">Orange Vibrancy</label>
+                <input type="range" id="orangeIntensity" min="0.3" max="1.5" step="0.1" value="1">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const elementCountEl = document.getElementById('elementCount');
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        // Bauhaus color palette
+        const colors = [
+            '#2a2a2a',  // dark gray
+            '#4a4a4a',  // medium gray
+            '#8a8a8a',  // light gray
+            '#e8e8e8'   // very light gray
+        ];
+        
+        const lineColors = [
+            '#2a2a2a',  // dark gray
+            '#4a4a4a',  // medium gray
+            '#e67e22'   // brighter orange
+        ];
+        
+        let circles = [];
+        let ripples = [];
+        let backgroundLines = [];
+        let horizontalLines = [];
+        
+        // Generate background lines
+        function createBackgroundLines() {
+            backgroundLines = [];
+            horizontalLines = [];
+            
+            // Fixed vertical lines (most on left side)
+            const verticalLines = [
+                { x: canvas.width * 0.08, width: 8, color: '#e67e22' },   // Orange thick
+                { x: canvas.width * 0.15, width: 2, color: '#2a2a2a' },   // Dark thin
+                { x: canvas.width * 0.22, width: 5, color: '#4a4a4a' },   // Medium thick
+                { x: canvas.width * 0.28, width: 1, color: '#2a2a2a' },   // Dark very thin
+                { x: canvas.width * 0.35, width: 3, color: '#e67e22' },   // Orange medium (different thickness)
+                { x: canvas.width * 0.12, width: 12, color: '#4a4a4a' },  // Medium very thick
+                { x: canvas.width * 0.65, width: 2, color: '#2a2a2a' },   // Dark thin (right side)
+                { x: canvas.width * 0.85, width: 5, color: '#4a4a4a' },   // Medium thick (right side)
+                { x: canvas.width * 0.18, width: 3, color: '#2a2a2a' },   // Dark medium
+                { x: canvas.width * 0.32, width: 1, color: '#4a4a4a' },   // Medium very thin
+                { x: canvas.width * 0.75, width: 8, color: '#2a2a2a' },   // Dark thick (right side)
+                { x: canvas.width * 0.25, width: 2, color: '#4a4a4a' }    // Medium thin
+            ];
+            
+            // Convert to proper format
+            for (const vLine of verticalLines) {
+                let color = vLine.color;
+                if (color === '#e67e22') {
+                    // Apply orange intensity multiplier
+                    const intensity = Math.min(255, Math.floor(230 * orangeIntensityMultiplier));
+                    const green = Math.min(255, Math.floor(126 * orangeIntensityMultiplier));
+                    color = `rgb(${intensity}, ${green}, 34)`;
+                }
+                
+                backgroundLines.push({
+                    x: vLine.x,
+                    y1: 0,
+                    y2: canvas.height,
+                    width: vLine.width * lineThicknessMultiplier,
+                    color: color
+                });
+            }
+            
+            // Fixed horizontal lines (most in bottom 60%)
+            const horizontalLinesData = [
+                { y: canvas.height * 0.45, width: 1.5, color: '#4a4a4a' }, // Medium thin (top area)
+                { y: canvas.height * 0.72, width: 2, color: '#e67e22' },   // Orange medium (bottom area)
+                { y: canvas.height * 0.58, width: 3, color: '#2a2a2a' },   // Dark medium (bottom area)
+                { y: canvas.height * 0.85, width: 1, color: '#4a4a4a' }    // Medium very thin (bottom area)
+            ];
+            
+            // Convert to proper format
+            for (const hLine of horizontalLinesData) {
+                let color = hLine.color;
+                if (color === '#e67e22') {
+                    // Apply orange intensity multiplier
+                    const intensity = Math.min(255, Math.floor(230 * orangeIntensityMultiplier));
+                    const green = Math.min(255, Math.floor(126 * orangeIntensityMultiplier));
+                    color = `rgb(${intensity}, ${green}, 34)`;
+                }
+                
+                horizontalLines.push({
+                    x1: 0,
+                    x2: canvas.width,
+                    y: hLine.y,
+                    width: hLine.width * lineThicknessMultiplier,
+                    color: color
+                });
+            }
+        }
+        
+        function drawBackgroundLines() {
+            // Draw vertical lines
+            for (const line of backgroundLines) {
+                ctx.save();
+                ctx.globalAlpha = lineOpacity;
+                ctx.strokeStyle = line.color;
+                ctx.lineWidth = line.width;
+                ctx.lineCap = 'butt';
+                ctx.beginPath();
+                ctx.moveTo(line.x, line.y1);
+                ctx.lineTo(line.x, line.y2);
+                ctx.stroke();
+                ctx.restore();
+            }
+            
+            // Draw horizontal lines
+            for (const line of horizontalLines) {
+                ctx.save();
+                ctx.globalAlpha = lineOpacity;
+                ctx.strokeStyle = line.color;
+                ctx.lineWidth = line.width;
+                ctx.lineCap = 'butt';
+                ctx.beginPath();
+                ctx.moveTo(line.x1, line.y);
+                ctx.lineTo(line.x2, line.y);
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+        
+        // Control variables
+        let circleSpeedMultiplier = 0.5;
+        let circleSizeMultiplier = 1;
+        let rippleSpeedMultiplier = 1.5;
+        let lineOpacity = 0.3;
+        let maxCircles = 15;
+        let rippleFrequency = 0.03;
+        let lineThicknessMultiplier = 1;
+        let orangeIntensityMultiplier = 1;
+        
+        // Get slider elements
+        const circleSpeedSlider = document.getElementById('circleSpeed');
+        const circleSizeSlider = document.getElementById('circleSize');
+        const rippleSpeedSlider = document.getElementById('rippleSpeed');
+        const lineOpacitySlider = document.getElementById('lineOpacity');
+        const maxCirclesSlider = document.getElementById('maxCircles');
+        const rippleFreqSlider = document.getElementById('rippleFreq');
+        const lineThicknessSlider = document.getElementById('lineThickness');
+        const orangeIntensitySlider = document.getElementById('orangeIntensity');
+        
+        // Update control variables when sliders change
+        circleSpeedSlider.addEventListener('input', (e) => {
+            circleSpeedMultiplier = parseFloat(e.target.value);
+        });
+        
+        circleSizeSlider.addEventListener('input', (e) => {
+            circleSizeMultiplier = parseFloat(e.target.value);
+        });
+        
+        rippleSpeedSlider.addEventListener('input', (e) => {
+            rippleSpeedMultiplier = parseFloat(e.target.value);
+        });
+        
+        lineOpacitySlider.addEventListener('input', (e) => {
+            lineOpacity = parseFloat(e.target.value);
+        });
+        
+        maxCirclesSlider.addEventListener('input', (e) => {
+            maxCircles = parseInt(e.target.value);
+        });
+        
+        rippleFreqSlider.addEventListener('input', (e) => {
+            rippleFrequency = parseFloat(e.target.value);
+        });
+        
+        lineThicknessSlider.addEventListener('input', (e) => {
+            lineThicknessMultiplier = parseFloat(e.target.value);
+        });
+        
+        orangeIntensitySlider.addEventListener('input', (e) => {
+            orangeIntensityMultiplier = parseFloat(e.target.value);
+        });
+        
+        // Toggle controls functionality
+        const toggleControlsBtn = document.getElementById('toggleControls');
+        const showControlsBtn = document.getElementById('showControls');
+        const controlsPanel = document.getElementById('controlsPanel');
+        let controlsVisible = true;
+        
+        toggleControlsBtn.addEventListener('click', () => {
+            controlsVisible = false;
+            controlsPanel.style.display = 'none';
+            showControlsBtn.style.display = 'flex';
+        });
+        
+        showControlsBtn.addEventListener('click', () => {
+            controlsVisible = true;
+            controlsPanel.style.display = 'block';
+            showControlsBtn.style.display = 'none';
+        });
+        
+        // Fullscreen functionality
+        const toggleFullscreenBtn = document.getElementById('toggleFullscreen');
+        let isFullscreen = false;
+        
+        toggleFullscreenBtn.addEventListener('click', () => {
+            if (!isFullscreen) {
+                // Enter fullscreen
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen();
+                } else if (document.documentElement.webkitRequestFullscreen) {
+                    document.documentElement.webkitRequestFullscreen();
+                } else if (document.documentElement.msRequestFullscreen) {
+                    document.documentElement.msRequestFullscreen();
+                }
+            } else {
+                // Exit fullscreen
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            }
+        });
+        
+        // Listen for fullscreen changes
+        document.addEventListener('fullscreenchange', updateFullscreenButton);
+        document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
+        document.addEventListener('msfullscreenchange', updateFullscreenButton);
+        
+        function updateFullscreenButton() {
+            isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+            if (isFullscreen) {
+                toggleFullscreenBtn.textContent = '⤡';
+                toggleFullscreenBtn.classList.add('active');
+            } else {
+                toggleFullscreenBtn.textContent = '⤢';
+                toggleFullscreenBtn.classList.remove('active');
+            }
+        }
+        
+        class Circle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.baseRadius = Math.random() * 30 + 10;
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+                this.baseVx = (Math.random() - 0.5) * 1;
+                this.baseVy = (Math.random() - 0.5) * 1;
+                this.life = 1.0;
+                this.decay = Math.random() * 0.005 + 0.001;
+            }
+            
+            update() {
+                this.vx = this.baseVx * circleSpeedMultiplier;
+                this.vy = this.baseVy * circleSpeedMultiplier;
+                this.radius = this.baseRadius * circleSizeMultiplier;
+                
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                // Bounce off edges
+                if (this.x - this.radius < 0 || this.x + this.radius > canvas.width) {
+                    this.baseVx *= -1;
+                }
+                if (this.y - this.radius < 0 || this.y + this.radius > canvas.height) {
+                    this.baseVy *= -1;
+                }
+                
+                // Keep within bounds
+                this.x = Math.max(this.radius, Math.min(canvas.width - this.radius, this.x));
+                this.y = Math.max(this.radius, Math.min(canvas.height - this.radius, this.y));
+                
+                this.life -= this.decay;
+                return this.life > 0;
+            }
+            
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+        
+        class Ripple {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.radius = 0;
+                this.maxRadius = Math.random() * 100 + 50;
+                this.baseSpeed = Math.random() * 2 + 1;
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+                this.lineWidth = Math.random() * 3 + 1;
+                this.life = 1.0;
+            }
+            
+            update() {
+                this.speed = this.baseSpeed * rippleSpeedMultiplier;
+                this.radius += this.speed;
+                this.life = 1 - (this.radius / this.maxRadius);
+                return this.radius < this.maxRadius;
+            }
+            
+            draw() {
+                if (this.life > 0) {
+                    ctx.save();
+                    ctx.globalAlpha = this.life;
+                    ctx.strokeStyle = this.color;
+                    ctx.lineWidth = this.lineWidth;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            }
+        }
+        
+        function createRipple() {
+            const x = Math.random() * canvas.width;
+            const y = Math.random() * canvas.height;
+            ripples.push(new Ripple(x, y));
+        }
+        
+        function animate() {
+            // Clear canvas
+            ctx.fillStyle = '#e6d7c3';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw background lines
+            drawBackgroundLines();
+            
+            // Update and draw circles
+            circles = circles.filter(circle => {
+                const alive = circle.update();
+                if (alive) circle.draw();
+                return alive;
+            });
+            
+            // Update and draw ripples
+            ripples = ripples.filter(ripple => {
+                const alive = ripple.update();
+                if (alive) ripple.draw();
+                return alive;
+            });
+            
+            // Add new circles occasionally
+            if (Math.random() < 0.01 && circles.length < maxCircles) {
+                circles.push(new Circle());
+            }
+            
+            // Add new ripples randomly
+            if (Math.random() < rippleFrequency) {
+                createRipple();
+            }
+            
+            elementCountEl.textContent = circles.length + ripples.length;
+            requestAnimationFrame(animate);
+        }
+        
+        // Click to create ripples
+        canvas.addEventListener('click', (e) => {
+            ripples.push(new Ripple(e.clientX, e.clientY));
+        });
+        
+        // Initialize with some elements
+        for (let i = 0; i < 8; i++) {
+            circles.push(new Circle());
+        }
+        
+        // Create initial background lines
+        createBackgroundLines();
+        
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            createBackgroundLines(); // Regenerate lines on resize
+        });
+        
+        // Also handle fullscreen resize
+        document.addEventListener('fullscreenchange', () => {
+            setTimeout(() => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                createBackgroundLines();
+            }, 100);
+        });
+        
+        animate();
+    </script>
+</body>
+</html>
